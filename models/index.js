@@ -1,37 +1,75 @@
-const dbConfig = require('../config/db');
-const Sequelize = require('sequelize');
+/**
+ * Import Dotenv.
+ */
+import "dotenv/config.js";
+
+/**
+ * Module dependencies.
+ */
+import Sequelize from "sequelize";
+import { env } from "../config/app.config.js";
+import database from "../config/database.config.cjs";
+
+/**
+ * Define database connection.
+ */
+const { development, test, production } = database;
+
+/**
+ * Define model list.
+ */
+import Quiz from "./quiz.model.js";
+import Category from "./category.model.js";
+
+/**
+ * Database connection.
+ */
+const connection =
+  env === "development" ? development : env === "test" ? test : production;
+
+/**
+ * Initialize database connection.
+ */
 const sequelize = new Sequelize(
-    dbConfig.DB,
-    dbConfig.USER,
-    dbConfig.PASSWORD, {
-        host: dbConfig.HOST,
-        dialect: dbConfig.dialect,
-        operatorAlias: false,
-        pool: {
-            max: dbConfig.pool.max,
-            min: dbConfig.pool.min,
-            acquire: dbConfig.pool.acquire,
-            idle: dbConfig.pool.idle
-        },
-    });
+  connection.database,
+  connection.username,
+  connection.password,
+  {
+    host: connection.host,
+    port: connection.port,
+    dialect: connection.dialect,
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+    },
+  }
+);
+
+/**
+ * Initialize database models.
+ */
 const db = {};
+
+/**
+ * Import database models.
+ */
+db.quiz = Quiz(sequelize, Sequelize.DataTypes);
+db.category = Category(sequelize, Sequelize.DataTypes);
+
+/**
+ * Associate database models.
+ */
+db.quiz.associate(db);
+db.category.associate(db);
+
+/**
+ * Export database models.
+ */
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-// define semua models
-db.quizzes = require('./quiz')(sequelize, Sequelize);
-db.categories = require('./category')(sequelize, Sequelize);
+export default db;
 
-// One to Many Relation
-
-db.categories.hasMany(db.quizzes, {
-    foreignKey: 'id',
-    as: 'quiz'
-})
-
-db.quizzes.belongsTo(db.categories, {
-    foreignKey: 'id',
-    as: 'category'
-})
-
-module.exports = db;
+// Path: models\index.js
